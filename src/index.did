@@ -1,0 +1,6 @@
+service: () -> {
+    createRecord: (nat64, nat64, int16, text) -> (record {id:principal; userId:nat64; createdAt:nat64; rate:int16; movieId:nat64; comment:text});
+    deleteRecord: (principal) -> (variant {Ok:record {id:principal; userId:nat64; createdAt:nat64; rate:int16; movieId:nat64; comment:text}; Err:variant {RecordingDoesNotExist:principal; UserDoesNotExist:principal}});
+    editRecord: (principal, nat64, nat64, int16, text) -> (record {id:principal; userId:nat64; createdAt:nat64; rate:int16; movieId:nat64; comment:text});
+    readRecord: (principal) -> (opt record {id:principal; userId:nat64; createdAt:nat64; rate:int16; movieId:nat64; comment:text}) query;
+}
