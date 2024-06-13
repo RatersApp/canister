@@ -1,10 +1,15 @@
 {
     "scripts": {
         "pretest": "ts-node --transpile-only --ignore=false test/pretest.ts",
-        "test": "ts-node --transpile-only --ignore=false test/test.ts"
+        "test": "ts-node --transpile-only --ignore=false test/test.ts",
+        "dfx-start": "dfx start --background --clean",
+        "dfx-stop": "dfx stop",
+        "start": "dfx deploy",
+        "start:dfx-restart": "dfx stop && dfx start --background --clean && dfx deploy"
     },
     "dependencies": {
-        "azle": "0.21.1"
+        "azle": "0.21.1",
+        "cbor": "^9.0.2"
     },
     "devDependencies": {
         "@dfinity/agent": "^0.19.2",

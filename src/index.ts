@@ -13,19 +13,17 @@ import {
   text,
   update,
   Variant,
-  Vec,
+  None,
+  nat16,
   nat32,
-  int16,
 } from "azle";
-
-let count: nat64 = 0n;
 
 const RecordRate = Record({
   id: Principal,
-  movieId: nat64,
-  userId: nat64,
+  movieId: nat32,
+  userId: nat32,
   createdAt: nat64,
-  rate: int16,
+  rate: nat16,
   comment: text,
 });
 type RecordRate = typeof RecordRate.tsType;
@@ -33,13 +31,12 @@ let recordsRate = StableBTreeMap<Principal, RecordRate>(0);
 
 const RecordRateError = Variant({
   RecordingDoesNotExist: Principal,
-  UserDoesNotExist: Principal,
 });
 type RecordRateError = typeof RecordRateError.tsType;
 
 export default Canister({
   createRecord: update(
-    [nat64, nat64, int16, text],
+    [nat32, nat32, nat16, text],
     RecordRate,
     (movieId, userId, rate, comment) => {
       const id = generateId();
@@ -59,15 +56,15 @@ export default Canister({
   ),
 
   editRecord: update(
-    [Principal, nat64, nat64, int16, text],
-    RecordRate,
+    [text, nat32, nat32, nat16, text],
+    Result(RecordRate, RecordRateError),
     (id, movieId, userId, rate, comment) => {
-      const recordingOpt = recordsRate.get(id);
-      // if ("None" in recordingOpt) {
-      //   return Err({ RecordingDoesNotExist: id });
-      // }
-      const record: RecordRate = {
-        id,
+      const principalId = Principal.fromText(id);
+      const recordingOpt = recordsRate.get(principalId);
+      if ("None" in recordingOpt) return Err({ RecordingDoesNotExist: principalId });
+
+      const record = {
+        id: principalId,
         movieId: movieId,
         userId: userId,
         createdAt: ic.time(),
@@ -77,26 +74,23 @@ export default Canister({
 
       recordsRate.insert(record.id, record);
 
-      return record;
+      return Ok(record);
     }
   ),
 
-  readRecord: query([Principal], Opt(RecordRate), (id) => {
-    return recordsRate.get(id);
+  readRecord: query([text], Opt(RecordRate), (id) => {
+    const principalId = Principal.fromText(id);
+    const recordingOpt = recordsRate.get(principalId);
+    if ("None" in recordingOpt) return None;
+
+    return recordingOpt;
   }),
 
-  deleteRecord: update([Principal], Result(RecordRate, RecordRateError), (id) => {
-    const recordingOpt = recordsRate.get(id);
-
-    if ("None" in recordingOpt) {
-      return Err({ RecordingDoesNotExist: id });
-    }
-
-    const recording = recordingOpt.Some;
-
-    recordsRate.remove(id);
-
-    return Ok(recording);
+  deleteRecord: update([text], Opt(RecordRate), (id) => {
+    const principalId = Principal.fromText(id);
+    const recordingOpt = recordsRate.get(principalId);
+    if ("None" in recordingOpt) return None;
+    return recordsRate.remove(principalId);
   }),
 });
 
