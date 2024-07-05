@@ -1,9 +1,8 @@
 service: () -> {
-    createRecord: (nat32, nat32, nat16, text) -> (record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; comment:text});
-    deleteRecord: (text) -> (opt record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; comment:text});
-    editRecord: (text, nat32, nat32, nat16, text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; comment:text}; Err:variant {RecordingDoesNotExist:principal}});
-    getPrincipal: () -> (principal) query;
-    http_request: (record {url:text; method:text; body:vec nat8; headers:vec record {text; text}; certificate_version:opt nat16}) -> (record {body:vec nat8; headers:vec record {text; text}; upgrade:opt bool; streaming_strategy:opt variant {Callback:record {token:record {arbitrary_data:text}; callback:func (record {arbitrary_data:text}) -> (opt record {token:opt record {arbitrary_data:text}; body:vec nat8}) query}}; status_code:nat16}) query;
-    http_request_update: (record {url:text; method:text; body:vec nat8; headers:vec record {text; text}; certificate_version:opt nat16}) -> (record {body:vec nat8; headers:vec record {text; text}; upgrade:opt bool; streaming_strategy:opt variant {Callback:record {token:record {arbitrary_data:text}; callback:func (record {arbitrary_data:text}) -> (opt record {token:opt record {arbitrary_data:text}; body:vec nat8}) query}}; status_code:nat16});
-    readRecord: (text) -> (opt record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; comment:text}) query;
+    createRecord: (nat32, nat32, nat16, text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text}; Err:variant {Message:text}});
+    deleteRecord: (text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text}; Err:variant {Message:text}});
+    editRecord: (text, nat32, nat32, nat16, text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text}; Err:variant {Message:text}});
+    readRecord: (text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text}; Err:variant {Message:text}}) query;
+    updateControllers: () -> (bool);
+    whoami: () -> (text) query;
 }
