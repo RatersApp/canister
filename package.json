@@ -1,14 +1,21 @@
 {
     "scripts": {
         "pretest": "ts-node --transpile-only --ignore=false test/pretest.ts",
-        "test": "ts-node --transpile-only --ignore=false test/test.ts"
+        "test": "ts-node --transpile-only --ignore=false test/test.ts",
+        "dfx-start": "dfx start --background --clean",
+        "dfx-stop": "dfx stop",
+        "start": "dfx deploy",
+        "dfx-restart-deploy": "dfx stop && dfx start --background --clean && dfx deploy",
+        "dfx-deploy-network-ic": "dfx deploy --network ic --with-cycles 500000000000",
+        "dfx-deploy-ic-status": "dfx canister --network ic status 7yjqx-vaaaa-aaaal-ajbeq-cai"
     },
     "dependencies": {
-        "azle": "0.21.1"
+        "azle": "0.22.0",
+        "cbor": "^9.0.2"
     },
     "devDependencies": {
-        "@dfinity/agent": "^0.19.2",
-        "ts-node": "^10.9.1",
-        "typescript": "^5.2.2"
+        "@dfinity/agent": "^1.4.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.5.3"
     }
 }

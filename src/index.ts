@@ -4,7 +4,6 @@ import {
   Err,
   nat64,
   Ok,
-  Opt,
   Principal,
   query,
   Record,
@@ -13,37 +12,68 @@ import {
   text,
   update,
   Variant,
-  Vec,
+  nat16,
   nat32,
-  int16,
+  bool,
 } from "azle";
-
-let count: nat64 = 0n;
+import { managementCanister } from "azle/canisters/management";
 
 const RecordRate = Record({
+  author: Principal,
   id: Principal,
-  movieId: nat64,
-  userId: nat64,
+  movieId: nat32,
+  userId: nat32,
   createdAt: nat64,
-  rate: int16,
+  rate: nat16,
   comment: text,
 });
 type RecordRate = typeof RecordRate.tsType;
 let recordsRate = StableBTreeMap<Principal, RecordRate>(0);
 
 const RecordRateError = Variant({
-  RecordingDoesNotExist: Principal,
-  UserDoesNotExist: Principal,
+  Message: text,
 });
 type RecordRateError = typeof RecordRateError.tsType;
 
-export default Canister({
+let controllers = StableBTreeMap<Principal>(0);
+
+const ratersCanister = Canister({
+  whoami: query([], text, () => {
+    const whoami = getMyPrincipal();
+    if (!whoami) return "anonymous authorized: false";
+    return whoami.toText() + " authorized: " + checkPermission(generateId(), whoami);
+  }),
+
+  updateControllers: update([], bool, async () => {
+    if (!getMyPrincipal()) return false;
+    const canisterId = ic.id();
+    const response = await ic.call(managementCanister.canister_status, {
+      args: [
+        {
+          canister_id: canisterId,
+        },
+      ],
+    });
+    controllers.values().forEach((r) => {
+      controllers.remove(r);
+    });
+    response.settings.controllers.forEach((r) => {
+      controllers.insert(r, r);
+    });
+
+    return true;
+  }),
+
   createRecord: update(
-    [nat64, nat64, int16, text],
-    RecordRate,
+    [nat32, nat32, nat16, text],
+    Result(RecordRate, RecordRateError),
     (movieId, userId, rate, comment) => {
+      const whoami = getMyPrincipal();
+      if (!whoami) return Err({ Message: "RecordingAccessDenied" });
+
       const id = generateId();
       const record: RecordRate = {
+        author: whoami,
         id,
         movieId: movieId,
         userId: userId,
@@ -54,20 +84,26 @@ export default Canister({
 
       recordsRate.insert(record.id, record);
 
-      return record;
+      return Ok(record);
     }
   ),
 
   editRecord: update(
-    [Principal, nat64, nat64, int16, text],
-    RecordRate,
+    [text, nat32, nat32, nat16, text],
+    Result(RecordRate, RecordRateError),
     (id, movieId, userId, rate, comment) => {
-      const recordingOpt = recordsRate.get(id);
-      // if ("None" in recordingOpt) {
-      //   return Err({ RecordingDoesNotExist: id });
-      // }
+      const whoami = getMyPrincipal();
+      if (!whoami) return Err({ Message: "RecordingAccessDenied" });
+
+      const principalId = Principal.fromText(id);
+      const recordingOpt = recordsRate.get(principalId);
+      if ("None" in recordingOpt) return Err({ Message: "RecordingDoesNotExist" });
+      if (!checkPermission(recordingOpt.Some.author, whoami))
+        return Err({ Message: "RecordingAccessDenied" });
+
       const record: RecordRate = {
-        id,
+        author: recordingOpt.Some.author,
+        id: principalId,
         movieId: movieId,
         userId: userId,
         createdAt: ic.time(),
@@ -77,26 +113,30 @@ export default Canister({
 
       recordsRate.insert(record.id, record);
 
-      return record;
+      return Ok(record);
     }
   ),
 
-  readRecord: query([Principal], Opt(RecordRate), (id) => {
-    return recordsRate.get(id);
+  readRecord: query([text], Result(RecordRate, RecordRateError), (id) => {
+    const principalId = Principal.fromText(id);
+    const recordingOpt = recordsRate.get(principalId);
+    if ("None" in recordingOpt) return Err({ Message: "RecordingDoesNotExist" });
+
+    return Ok(recordingOpt.Some);
   }),
 
-  deleteRecord: update([Principal], Result(RecordRate, RecordRateError), (id) => {
-    const recordingOpt = recordsRate.get(id);
+  deleteRecord: update([text], Result(RecordRate, RecordRateError), (id) => {
+    const whoami = getMyPrincipal();
+    if (!whoami) return Err({ Message: "RecordingAccessDenied" });
 
-    if ("None" in recordingOpt) {
-      return Err({ RecordingDoesNotExist: id });
-    }
+    const principalId = Principal.fromText(id);
+    const recordingOpt = recordsRate.get(principalId);
+    if ("None" in recordingOpt) return Err({ Message: "RecordingDoesNotExist" });
+    if (!checkPermission(recordingOpt.Some.author, whoami))
+      return Err({ RecordingAccessDenied: principalId });
 
-    const recording = recordingOpt.Some;
-
-    recordsRate.remove(id);
-
-    return Ok(recording);
+    recordsRate.remove(principalId);
+    return Ok(recordingOpt.Some);
   }),
 });
 
@@ -104,3 +144,20 @@ function generateId(): Principal {
   const randomBytes = new Array(29).fill(0).map((_) => Math.floor(Math.random() * 256));
   return Principal.fromUint8Array(Uint8Array.from(randomBytes));
 }
+
+function checkPermission(principal: Principal, whoami: Principal): bool {
+  if (whoami.compareTo(principal) === "eq") return true;
+  const controllerOpt = controllers.get(whoami);
+  if ("None" in controllerOpt) return false;
+  return true;
+}
+
+function getMyPrincipal(): Principal | null {
+  const caller = ic.caller();
+  if (caller.isAnonymous()) {
+    return null;
+  }
+  return caller;
+}
+
+export default ratersCanister;
