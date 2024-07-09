@@ -18,11 +18,18 @@ import {
 } from "azle";
 import { managementCanister } from "azle/canisters/management";
 
+const WhoAmI = Record({
+  whoami: text,
+  authorized: bool,
+});
+type WhoAmI = typeof WhoAmI.tsType;
+
 const RecordRate = Record({
   author: Principal,
   id: Principal,
   movieId: nat32,
   userId: nat32,
+  userPrincipal: Principal,
   createdAt: nat64,
   rate: nat16,
   comment: text,
@@ -38,10 +45,10 @@ type RecordRateError = typeof RecordRateError.tsType;
 let controllers = StableBTreeMap<Principal>(0);
 
 const ratersCanister = Canister({
-  whoami: query([], text, () => {
+  whoami: query([], WhoAmI, () => {
     const whoami = getMyPrincipal();
-    if (!whoami) return "anonymous authorized: false";
-    return whoami.toText() + " authorized: " + checkPermission(generateId(), whoami);
+    if (!whoami) return { whoami: "anonymous", authorized: false };
+    return { whoami: whoami.toText(), authorized: checkPermission(whoami) };
   }),
 
   updateControllers: update([], bool, async () => {
@@ -65,18 +72,26 @@ const ratersCanister = Canister({
   }),
 
   createRecord: update(
-    [nat32, nat32, nat16, text],
+    [nat32, nat32, text, nat16, text],
     Result(RecordRate, RecordRateError),
-    (movieId, userId, rate, comment) => {
+    (movieId, userId, userTextPrincipal, rate, comment) => {
       const whoami = getMyPrincipal();
-      if (!whoami) return Err({ Message: "RecordingAccessDenied" });
+      if (!whoami) return Err({ Message: "RecordAccessDenied" });
 
+      let userPrincipal;
+      try {
+        userPrincipal = Principal.fromText(userTextPrincipal);
+      } catch (e) {
+        return Err({ Message: "PrincipalIncorrect" });
+      }
+  
       const id = generateId();
       const record: RecordRate = {
         author: whoami,
         id,
         movieId: movieId,
         userId: userId,
+        userPrincipal: userPrincipal,
         createdAt: ic.time(),
         rate: rate,
         comment: comment,
@@ -89,24 +104,30 @@ const ratersCanister = Canister({
   ),
 
   editRecord: update(
-    [text, nat32, nat32, nat16, text],
+    [text, nat16, text],
     Result(RecordRate, RecordRateError),
-    (id, movieId, userId, rate, comment) => {
+    (id, rate, comment) => {
       const whoami = getMyPrincipal();
-      if (!whoami) return Err({ Message: "RecordingAccessDenied" });
+      if (!whoami) return Err({ Message: "RecordAccessDenied" });
 
-      const principalId = Principal.fromText(id);
-      const recordingOpt = recordsRate.get(principalId);
-      if ("None" in recordingOpt) return Err({ Message: "RecordingDoesNotExist" });
-      if (!checkPermission(recordingOpt.Some.author, whoami))
-        return Err({ Message: "RecordingAccessDenied" });
+      let principalId;
+      try {
+        principalId = Principal.fromText(id);
+      } catch (e) {
+        return Err({ Message: "RecordDoesNotExist" });
+      }
+      const recordOpt = recordsRate.get(principalId);
+      if ("None" in recordOpt) return Err({ Message: "RecordDoesNotExist" });
+      if (!checkPermission(whoami, recordOpt.Some.author, recordOpt.Some.userPrincipal))
+        return Err({ Message: "RecordAccessDenied" });
 
       const record: RecordRate = {
-        author: recordingOpt.Some.author,
-        id: principalId,
-        movieId: movieId,
-        userId: userId,
-        createdAt: ic.time(),
+        author: recordOpt.Some.author,
+        id: recordOpt.Some.id,
+        movieId: recordOpt.Some.movieId,
+        userId: recordOpt.Some.userId,
+        userPrincipal: recordOpt.Some.userPrincipal,
+        createdAt: recordOpt.Some.createdAt,
         rate: rate,
         comment: comment,
       };
@@ -118,25 +139,37 @@ const ratersCanister = Canister({
   ),
 
   readRecord: query([text], Result(RecordRate, RecordRateError), (id) => {
-    const principalId = Principal.fromText(id);
-    const recordingOpt = recordsRate.get(principalId);
-    if ("None" in recordingOpt) return Err({ Message: "RecordingDoesNotExist" });
+    let principalId;
+    try {
+      principalId = Principal.fromText(id);
+    } catch (e) {
+      return Err({ Message: "RecordDoesNotExist" });
+    }
 
-    return Ok(recordingOpt.Some);
+    const recordOpt = recordsRate.get(principalId);
+    if ("None" in recordOpt) return Err({ Message: "RecordDoesNotExist" });
+
+    return Ok(recordOpt.Some);
   }),
 
   deleteRecord: update([text], Result(RecordRate, RecordRateError), (id) => {
     const whoami = getMyPrincipal();
-    if (!whoami) return Err({ Message: "RecordingAccessDenied" });
+    if (!whoami) return Err({ Message: "RecordAccessDenied" });
 
-    const principalId = Principal.fromText(id);
-    const recordingOpt = recordsRate.get(principalId);
-    if ("None" in recordingOpt) return Err({ Message: "RecordingDoesNotExist" });
-    if (!checkPermission(recordingOpt.Some.author, whoami))
-      return Err({ RecordingAccessDenied: principalId });
+    let principalId;
+    try {
+      principalId = Principal.fromText(id);
+    } catch (e) {
+      return Err({ Message: "RecordDoesNotExist" });
+    }
+
+    const recordOpt = recordsRate.get(principalId);
+    if ("None" in recordOpt) return Err({ Message: "RecordDoesNotExist" });
+    if (!checkPermission(whoami, recordOpt.Some.author, recordOpt.Some.userPrincipal))
+      return Err({ Message: "RecordAccessDenied" });
 
     recordsRate.remove(principalId);
-    return Ok(recordingOpt.Some);
+    return Ok(recordOpt.Some);
   }),
 });
 
@@ -145,8 +178,16 @@ function generateId(): Principal {
   return Principal.fromUint8Array(Uint8Array.from(randomBytes));
 }
 
-function checkPermission(principal: Principal, whoami: Principal): bool {
-  if (whoami.compareTo(principal) === "eq") return true;
+function checkPermission(
+  whoami: Principal,
+  principal?: Principal,
+  userPrincipal?: Principal
+): bool {
+  if (
+    (principal && whoami.compareTo(principal) === "eq") ||
+    (userPrincipal && whoami.compareTo(userPrincipal) === "eq")
+  )
+    return true;
   const controllerOpt = controllers.get(whoami);
   if ("None" in controllerOpt) return false;
   return true;
