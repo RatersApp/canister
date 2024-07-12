@@ -1,8 +1,8 @@
 service: () -> {
-    createRecord: (nat32, nat32, text, nat16, text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}});
-    deleteRecord: (text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}});
-    editRecord: (text, nat16, text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}});
-    readRecord: (text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:nat16; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}}) query;
+    createRecord: (nat32, nat32, text, float32, text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:float32; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}});
+    deleteRecord: (text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:float32; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}});
+    editRecord: (text, float32, text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:float32; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}});
+    readRecord: (text) -> (variant {Ok:record {id:principal; userId:nat32; createdAt:nat64; rate:float32; movieId:nat32; author:principal; comment:text; userPrincipal:principal}; Err:variant {Message:text}}) query;
     updateControllers: () -> (bool);
     whoami: () -> (record {authorized:bool; whoami:text}) query;
 }

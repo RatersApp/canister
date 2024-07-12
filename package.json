@@ -7,7 +7,8 @@
         "start": "dfx deploy",
         "dfx-restart-deploy": "dfx stop && dfx start --background --clean && dfx deploy",
         "dfx-deploy-network-ic": "dfx deploy --network ic --with-cycles 500000000000",
-        "dfx-deploy-ic-status": "dfx canister --network ic status 7yjqx-vaaaa-aaaal-ajbeq-cai"
+        "dfx-deploy-ic-status": "dfx canister --network ic status 7yjqx-vaaaa-aaaal-ajbeq-cai",
+        "dfx-uninstall-network-ic": "dfx canister --network ic uninstall-code 7yjqx-vaaaa-aaaal-ajbeq-cai"
     },
     "dependencies": {
         "azle": "0.22.0",
