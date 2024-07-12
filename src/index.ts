@@ -12,9 +12,9 @@ import {
   text,
   update,
   Variant,
-  nat16,
   nat32,
   bool,
+  float32,
 } from "azle";
 import { managementCanister } from "azle/canisters/management";
 
@@ -31,7 +31,7 @@ const RecordRate = Record({
   userId: nat32,
   userPrincipal: Principal,
   createdAt: nat64,
-  rate: nat16,
+  rate: float32,
   comment: text,
 });
 type RecordRate = typeof RecordRate.tsType;
@@ -72,7 +72,7 @@ const ratersCanister = Canister({
   }),
 
   createRecord: update(
-    [nat32, nat32, text, nat16, text],
+    [nat32, nat32, text, float32, text],
     Result(RecordRate, RecordRateError),
     (movieId, userId, userTextPrincipal, rate, comment) => {
       const whoami = getMyPrincipal();
@@ -84,7 +84,7 @@ const ratersCanister = Canister({
       } catch (e) {
         return Err({ Message: "PrincipalIncorrect" });
       }
-  
+
       const id = generateId();
       const record: RecordRate = {
         author: whoami,
@@ -104,7 +104,7 @@ const ratersCanister = Canister({
   ),
 
   editRecord: update(
-    [text, nat16, text],
+    [text, float32, text],
     Result(RecordRate, RecordRateError),
     (id, rate, comment) => {
       const whoami = getMyPrincipal();
