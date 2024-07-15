@@ -7,6 +7,7 @@
     <li><a href="#project-overview">Project Overview</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#installation">Installation</a></li>
+    <li><a href="#why-choose-azle">Why Choose Azle?</a></li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#license">License</a></li>
 </ul>
@@ -20,6 +21,19 @@
     <li>Secure user interactions</li>
     <li>Efficient data storage and retrieval</li>
 </ul>
+
+<h2 id="why-choose-azle">Why Choose Azle?</h2>
+
+<p>Azle is a powerful JavaScript framework designed for building canisters on the Internet Computer (ICP). With Azle, developers can create efficient and scalable decentralized applications (dApps) using familiar JavaScript syntax and paradigms.</p>
+
+<ul>
+    <li><strong>Developer-Friendly:</strong> Azle leverages JavaScript, making it accessible for web developers who want to dive into blockchain technology without needing to learn a completely new language.</li>
+    <li><strong>Strong Type Safety:</strong> Built on Rust's robust type system, Azle provides compile-time checks that help prevent runtime errors, enhancing the reliability of canister applications.</li>
+    <li><strong>Integration with ICP:</strong> Seamlessly integrates with the Internet Computer, allowing developers to harness its capabilities for building high-performance, secure applications.</li>
+    <li><strong>Active Community:</strong> Benefit from an engaged community and ongoing development, ensuring continuous improvements and support.</li>
+</ul>
+
+<p>Using Azle, developers can focus on building innovative solutions while enjoying the advantages of a modern framework tailored for the blockchain ecosystem.</p>
 
 <h2 id="installation">Installation</h2>
 <ol>
