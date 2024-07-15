@@ -7,7 +7,7 @@
     <li><a href="#project-overview">Project Overview</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#installation">Installation</a></li>
-    <li><a href="#why-choose-azle">Why Choose Azle?</a></li>
+    <li><a href="#why-choose-azle">Azle core framework</a></li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#license">License</a></li>
 </ul>
@@ -22,9 +22,10 @@
     <li>Efficient data storage and retrieval</li>
 </ul>
 
-<h2 id="why-choose-azle">Why Choose Azle?</h2>
+<h2 id="why-choose-azle">Azle core framework</h2>
 
-<p>Azle is a powerful JavaScript framework designed for building canisters on the Internet Computer (ICP). With Azle, developers can create efficient and scalable decentralized applications (dApps) using familiar JavaScript syntax and paradigms.</p>
+<p>Why Choose Azle?
+Azle is a powerful JavaScript framework designed for building canisters on the Internet Computer (ICP). With Azle, developers can create efficient and scalable decentralized applications (dApps) using familiar JavaScript syntax and paradigms.</p>
 
 <ul>
     <li><strong>Developer-Friendly:</strong> Azle leverages JavaScript, making it accessible for web developers who want to dive into blockchain technology without needing to learn a completely new language.</li>
